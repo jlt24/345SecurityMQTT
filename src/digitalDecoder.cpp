@@ -102,7 +102,7 @@ void DigitalDecoder::updateKeypadState(uint32_t serial, uint64_t payload)
 
     currentState.sequence = (payload & 0xF00000000000) >> 44;
     currentState.lowBat = payload & 0x000000020000;
-    
+
     bool supervised = payload & 0x000000040000;
     if (supervised) return;
 
@@ -122,7 +122,7 @@ void DigitalDecoder::updateKeypadState(uint32_t serial, uint64_t payload)
         std::ostringstream topic;
         topic << KEYPAD_TOPIC << serial << "/keypress";
         char c = ((payload & 0x000000F00000) >> 20);
-        
+
         std::string key;
         if (c == 0xA)
         {
@@ -157,11 +157,11 @@ void DigitalDecoder::updateKeypadState(uint32_t serial, uint64_t payload)
             key = (c + '0');
         }
         mqtt.send(topic.str().c_str(), key.c_str(), 1, false);
-        
+
         if ((c >= 1 && c <= 0xC) && (currentState.lastUpdateTime <= (lastState.lastUpdateTime + 2)) && (lastState.phrase.length() < 10))
         {
             currentState.phrase = lastState.phrase + key;
-            
+
             std::ostringstream phraseTopic;
             phraseTopic << KEYPAD_TOPIC << serial << "/keyphrase/" << currentState.phrase.length();
             mqtt.send(phraseTopic.str().c_str(), currentState.phrase.c_str(), 1, false);
@@ -170,7 +170,7 @@ void DigitalDecoder::updateKeypadState(uint32_t serial, uint64_t payload)
         {
             currentState.phrase = key;
         }
-        
+
         keypadStatusMap[serial] = currentState;
     }
 }
@@ -192,7 +192,7 @@ void DigitalDecoder::updateSensorState(uint32_t serial, uint64_t payload)
     currentState.tamper = payload & 0x000000400000;
     currentState.lowBat = payload & 0x000000080000;
 
-    bool supervised = payload & 0x000000040000;
+    // bool supervised = payload & 0x000000040000;
     // bool repeated = payload & 0x000000020000;
 
     //std::cout << "Payload:" << std::hex << payload << " Serial:" << std::dec << serial << std::boolalpha << " Loop1:" << currentState.loop1 << std::endl;
@@ -215,9 +215,9 @@ void DigitalDecoder::updateSensorState(uint32_t serial, uint64_t payload)
     {
         lastState = found->second;
     }
-    
+
     // Since the sensor will frequently blast out the same signal many times, we only want to treat
-    // the first detected signal as the supervisory signal. 
+    // the first detected signal as the supervisory signal.
     bool supervised = (payload & 0x000000040000) && ((currentState.lastUpdateTime - lastState.lastUpdateTime) > 2);
 
     if ((currentState.loop1 != lastState.loop1) || supervised)
@@ -307,11 +307,11 @@ bool DigitalDecoder::isPayloadValid(uint64_t payload, uint64_t polynomial) const
             polynomial = 0x18005;
         } else if (sof == 0xD || sof == 0xE) {
             // Vivint
-            printf("Vivint Sensor %x", sof);
+            printf("Vivint Sensor %ld", sof);
             polynomial = 0x18050; // Don't know if this is correct
         } else {
             // Something else?
-            printf("Unknown Brand Sensor %x", sof);
+            printf("Unknown Brand Sensor %ld", sof);
             polynomial = 0x18050;
         }
     }
